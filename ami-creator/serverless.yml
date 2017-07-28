@@ -11,11 +11,7 @@
 #
 # Happy Coding!
 
-service: aws-nodejs # NOTE: update this with your service name
-
-# You can pin your service to only deploy with a specific Serverless version
-# Check out our docs for more details
-# frameworkVersion: "=X.X.X"
+service: ami-creator # NOTE: update this with your service name
 
 provider:
   name: aws
@@ -55,8 +51,8 @@ provider:
 #    - exclude-me-dir/**
 
 functions:
-  hello:
-    handler: handler.hello
+  engine:
+    handler: ami-creator-engine.handlerequest
 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events

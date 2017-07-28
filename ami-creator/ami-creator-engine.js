@@ -1,6 +1,6 @@
 'use strict';
 
-module.exports.hello = (event, context, callback) => {
+module.exports.handlerequest = (event, context, callback) => {
   const response = {
     statusCode: 200,
     body: JSON.stringify({
