@@ -4,11 +4,16 @@
   "description": "automates taking ami's from instances",
   "main": "ami-creator-engine.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha tests"
   },
   "author": "David",
   "license": "ISC",
   "dependencies": {
-    "async": "^2.5.0"
+    "async": "^2.5.0",
+    "aws-sdk": "^2.92.0"
+  },
+  "devDependencies": {
+    "chai": "^4.1.0",
+    "rewire": "^2.5.2"
   }
 }
