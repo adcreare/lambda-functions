@@ -4,9 +4,10 @@ const AWS = require('aws-sdk');
 const AdmZip = require('adm-zip');
 const s3 = new AWS.S3();
 const ec2 = new AWS.EC2();
+const codepipeline = new AWS.CodePipeline();
 
 const snapShotDescription = 'snap taken by ami-creator-engine';
-const snapShotName = 'mytestsnapshot';
+const snapShotNamePrefix = 'mytestsnapshot';
 
 module.exports.handlerequest = (event, context, callback) => {
 
@@ -42,11 +43,13 @@ function runWorkFlow(inputObject,callback)
     [
       async.apply(getFileFromS3,inputObject.bucketname,inputObject.objectkey),
       extractFile,
-      async.apply(createAMIMachineImage,snapShotName,snapShotDescription)
-
+      async.apply(createAMIMachineImage,snapShotNamePrefix,snapShotDescription),
+      async.apply(putJobSuccess,inputObject.jobId)
+      //callback(null,'execution completed')
   ],
   function (err, message) {
     console.log(`Error received - ${message} -  error object: ${JSON.stringify(err)}`);
+    callback(err,message);
    }
   );
 }
@@ -88,11 +91,11 @@ function processCFStackResponse(dataContainedInFile)
   return JSON.parse(dataContainedInFile);
 }
 
-function createAMIMachineImage(snapshotName,snapShotDescription,awsStackOutput,callback)
+function createAMIMachineImage(snapShotNamePrefix,snapShotDescription,awsStackOutput,callback)
 {
   const params = {
     InstanceId: awsStackOutput.InstanceID, /* required */
-    Name: snapshotName, /* required */
+    Name: `${snapShotNamePrefix}-${getDate()}`, /* required */
     Description: snapShotDescription,
   };
   console.log(params);
@@ -101,6 +104,24 @@ function createAMIMachineImage(snapshotName,snapShotDescription,awsStackOutput,c
     else callback(null,data);           // successful response
   });
 }
+
+function putJobSuccess(jobId, callback)
+{
+  var params = {
+      jobId: jobId
+  };
+  codepipeline.putJobSuccessResult(params, function(err, data) {
+      if(err) callback(err,'Unable to mark codepipeline job as successful');
+      else callback(null,data);
+  });
+}
+
+
+function getDate()
+{
+  return (new Date().toISOString()).replace(/:/g,'.');
+}
+
 
 /*
 
