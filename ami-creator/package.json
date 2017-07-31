@@ -9,6 +9,7 @@
   "author": "David",
   "license": "ISC",
   "dependencies": {
+    "adm-zip": "^0.4.7",
     "async": "^2.5.0",
     "aws-sdk": "^2.92.0"
   },
