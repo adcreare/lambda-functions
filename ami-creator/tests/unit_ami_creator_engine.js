@@ -37,15 +37,15 @@ describe("main function file", function() {
   });
 
   it("extractFile works as expected to extract good file", function(done) {
-    extractFile(testEventMyStackFileOutputZipped, function(data){
-      assert.typeOf(data,"string");
+    extractFile(testEventMyStackFileOutputZipped, function(err,data){
+      assert.typeOf(data,"object");
       done();
     })
   });
 
   it("extractFile throws as expected with bad file input", function(done) {
     assert.throws(function(){
-      extractFile(testEventMyStackFileOutputZippedBadFile,function(data){})
+      extractFile(testEventMyStackFileOutputZippedBadFile,function(err,data){})
     }, Error, 'Zip file appears to have multiple files instead of the expected 1');
     done();
   });
