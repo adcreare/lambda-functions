@@ -2,6 +2,7 @@
 const async = require('async');
 const AWS = require('aws-sdk');
 const AdmZip = require('adm-zip');
+
 const s3 = new AWS.S3();
 const ec2 = new AWS.EC2();
 const codepipeline = new AWS.CodePipeline();
@@ -31,25 +32,25 @@ module.exports.handlerequest = (event, context, callback) => {
   //
   const keyData = validateInputAndProvideKeyData(event);
   if (keyData === false) callback(null, { message: 'Incorrect input supplied: '+JSON.stringify(event) });
-  else runWorkFlow(keyData,callback);
+  else runWorkFlow(keyData,context,callback);
 
 
 }; //end handlerequest
 
 
-function runWorkFlow(inputObject,callback)
+function runWorkFlow(inputObject,context,callback)
 {
   async.waterfall(
     [
       async.apply(getFileFromS3,inputObject.bucketname,inputObject.objectkey),
       extractFile,
       async.apply(createAMIMachineImage,snapShotNamePrefix,snapShotDescription),
-      async.apply(putJobSuccess,inputObject.jobId)
+      async.apply(putJobSuccess,inputObject.codePipelineId)
       //callback(null,'execution completed')
   ],
   function (err, message) {
     console.log(`Error received - ${message} -  error object: ${JSON.stringify(err)}`);
-    callback(err,message);
+    putJobFailed(inputObject.jobId,err,message,context,callback);
    }
   );
 }
@@ -101,18 +102,35 @@ function createAMIMachineImage(snapShotNamePrefix,snapShotDescription,awsStackOu
   console.log(params);
   ec2.createImage(params, function(err, data) {
     if (err) callback(err,'Unable to create AMI machine image'); // an error occurred
-    else callback(null,data);           // successful response
+    else callback(null);           // successful response
   });
 }
 
-function putJobSuccess(jobId, callback)
+function putJobSuccess(jobIdObject, callback)
 {
-  var params = {
-      jobId: jobId
+  const params = {
+      jobId: jobIdObject
   };
+
   codepipeline.putJobSuccessResult(params, function(err, data) {
       if(err) callback(err,'Unable to mark codepipeline job as successful');
       else callback(null,data);
+  });
+}
+
+function putJobFailed(jobId,err,message,lambdaContext,lambdaCallback)
+{
+  const params = {
+      jobId: jobId,
+      failureDetails: {
+          message: JSON.stringify(message),
+          type: 'JobFailed',
+          externalExecutionId: lambdaContext.invokeid
+      }
+  };
+
+  codepipeline.putJobFailureResult(params, function(err, data) {
+      lambdaCallback(message);
   });
 }
 
@@ -121,7 +139,6 @@ function getDate()
 {
   return (new Date().toISOString()).replace(/:/g,'.');
 }
-
 
 /*
 
