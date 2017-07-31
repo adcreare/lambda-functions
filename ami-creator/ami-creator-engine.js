@@ -1,12 +1,12 @@
 'use strict';
-const waterfall = require('async/waterfall');
+const async = require('async');
 const AWS = require('aws-sdk');
 const AdmZip = require('adm-zip');
 const s3 = new AWS.S3();
 const ec2 = new AWS.EC2();
 
 const snapShotDescription = 'snap taken by ami-creator-engine';
-const snapShotName = 'mytestsnapshot'
+const snapShotName = 'mytestsnapshot';
 
 module.exports.handlerequest = (event, context, callback) => {
 
@@ -38,16 +38,14 @@ module.exports.handlerequest = (event, context, callback) => {
 
 function runWorkFlow(inputObject,callback)
 {
-  waterfall(
+  async.waterfall(
     [
-      getFileFromS3(inputObject.bucketname,inputObject.objectkey),
+      async.apply(getFileFromS3,inputObject.bucketname,inputObject.objectkey),
       extractFile,
-      processCFStackResponse,
-      createAMIMachineImage(snapShotName,snapShotDescription)
-
+      async.apply(createAMIMachineImage,snapShotName,snapShotDescription)
   ],
   function (err, message) {
-    console.log('Error received - error object: '+JSON.stringify(err)+' - message: '+message);
+    console.log(`Error received - ${message} -  error object: ${JSON.stringify(err)}`);
    }
   );
 }
@@ -67,7 +65,7 @@ function getFileFromS3(bucket,key,getfileCallback)
 
     s3.getObject(params, function(err,data)
     {
-      if(err) getfileCallback(err);
+      if(err) getfileCallback(err,'Unable to get codepipeline stack file from S3');
       else getfileCallback(null,data);
     });
 }
@@ -80,7 +78,7 @@ function extractFile(buffer,extractFileCallBack)
 
   if (zipEntries.length != 1) throw new Error('Zip file appears to have multiple files instead of the expected 1');
 
-  extractFileCallBack(zip.readAsText(zipEntries[0]));
+  extractFileCallBack(null,processCFStackResponse(zip.readAsText(zipEntries[0])));
 }
 
 function processCFStackResponse(dataContainedInFile)
@@ -91,12 +89,12 @@ function processCFStackResponse(dataContainedInFile)
 function createAMIMachineImage(instanceId,snapshotName,snapShotDescription, callback)
 {
   const params = {
-    InstanceId: 'STRING_VALUE', /* required */
-    Name: 'STRING_VALUE', /* required */
-    Description: 'STRING_VALUE',
+    InstanceId: instanceId, /* required */
+    Name: snapshotName, /* required */
+    Description: snapShotDescription,
   };
   ec2.createImage(params, function(err, data) {
-    if (err) callback(err); // an error occurred
+    if (err) callback(err,'Unable to create AMI machine image'); // an error occurred
     else callback(null,data);           // successful response
   });
 }
