@@ -35,6 +35,16 @@ provider:
            - "codepipeline-"
            - "Ref" : "AWS::Region"
            - "-*"
+   - Effect: "Allow"
+     Action:
+       - "ec2:CreateImage"
+     Resource: "*"
+   - Effect: "Allow"
+     Action:
+       - "codepipeline:PutJobSuccessResult"
+       - "codepipeline:PutJobFailureResult"
+     Resource: "*"
+
 
     # - Effect: "Allow"
     #   Action:

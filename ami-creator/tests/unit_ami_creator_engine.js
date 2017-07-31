@@ -31,7 +31,7 @@ describe("main function file", function() {
   });
 
   it("validateInput works as expected", function() {
-    expect(validateInput(testEvent)).to.deep.equal({bucketname:'codepipeline-us-east-1-000000000000',objectkey:'MyTestStack/MyStackOut/BG7789K'});
+    expect(validateInput(testEvent)).to.deep.equal({bucketname:'codepipeline-us-east-1-000000000000',objectkey:'MyTestStack/MyStackOut/BG7789K', codePipelineId:'08dcc619-ca93-4ab0-98b1-a468975fa160'});
     expect(validateInput({'testdata':'test'})).to.be.false;
 
   });

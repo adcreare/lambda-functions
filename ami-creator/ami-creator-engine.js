@@ -43,6 +43,7 @@ function runWorkFlow(inputObject,callback)
       async.apply(getFileFromS3,inputObject.bucketname,inputObject.objectkey),
       extractFile,
       async.apply(createAMIMachineImage,snapShotName,snapShotDescription)
+
   ],
   function (err, message) {
     console.log(`Error received - ${message} -  error object: ${JSON.stringify(err)}`);
@@ -66,13 +67,14 @@ function getFileFromS3(bucket,key,getfileCallback)
     s3.getObject(params, function(err,data)
     {
       if(err) getfileCallback(err,'Unable to get codepipeline stack file from S3');
-      else getfileCallback(null,data);
+      else getfileCallback(null,data.Body);
     });
 }
 
 //Function to extract a zip file
 function extractFile(buffer,extractFileCallBack)
 {
+  // console.log(buffer);
   var zip = new AdmZip(buffer);
   var zipEntries = zip.getEntries();
 
@@ -86,13 +88,14 @@ function processCFStackResponse(dataContainedInFile)
   return JSON.parse(dataContainedInFile);
 }
 
-function createAMIMachineImage(instanceId,snapshotName,snapShotDescription, callback)
+function createAMIMachineImage(snapshotName,snapShotDescription,awsStackOutput,callback)
 {
   const params = {
-    InstanceId: instanceId, /* required */
+    InstanceId: awsStackOutput.InstanceID, /* required */
     Name: snapshotName, /* required */
     Description: snapShotDescription,
   };
+  console.log(params);
   ec2.createImage(params, function(err, data) {
     if (err) callback(err,'Unable to create AMI machine image'); // an error occurred
     else callback(null,data);           // successful response
@@ -105,15 +108,16 @@ function createAMIMachineImage(instanceId,snapshotName,snapShotDescription, call
 function validateInputAndProvideKeyData(event)
 {
 
-  let bucketName, objectKey;
+  let bucketName, objectKey, id;
 
   try{
     bucketName = event["CodePipeline.job"].data.inputArtifacts[0].location.s3Location.bucketName;
     objectKey = event["CodePipeline.job"].data.inputArtifacts[0].location.s3Location.objectKey;
+    id = event["CodePipeline.job"].id;
   }
   catch(err)
   {
     return false;
   }
-  return {'bucketname':bucketName,'objectkey':objectKey};
+  return {'bucketname':bucketName,'objectkey':objectKey, codePipelineId: id};
 }
