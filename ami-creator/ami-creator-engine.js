@@ -43,25 +43,27 @@ function runWorkFlow(inputObject,context,callback)
     [
       async.apply(getFileFromS3,inputObject.bucketname,inputObject.objectkey),
       extractFile,
-      async.apply(createAMIMachineImage,snapShotDescription),
-      async.apply(putJobSuccess,inputObject.codePipelineId)
-      //callback(null,'execution completed')
+      async.apply(createAMIMachineImage,snapShotDescription)
   ],
   function (err, message) {
-    console.log(`Error received - ${message} -  error object: ${JSON.stringify(err)}`);
-    putJobFailed(inputObject.jobId,err,message,context,callback);
+    if(err)
+    {
+      console.log(`Error received - ${JSON.stringify(message)} -  error object: ${JSON.stringify(err)}`);
+      putJobFailed(inputObject.jobId,err,message,context,callback);
+    }
+    else {
+      console.log('job successful: '+JSON.stringify(message));
+      putJobSuccess(inputObject.codePipelineId,callback);
+    }
+
    }
   );
 }
 
 
-function testImDoneFunction()
-{
-  console.log('AWESOME! - should be last');
-}
-
 function getFileFromS3(bucket,key,getfileCallback)
 {
+  console.log('getfilesFromS3');
     const params = {
       Bucket: bucket,
       Key: key
@@ -77,6 +79,7 @@ function getFileFromS3(bucket,key,getfileCallback)
 //Function to extract a zip file
 function extractFile(buffer,extractFileCallBack)
 {
+  console.log('extractFile');
   // console.log(buffer);
   var zip = new AdmZip(buffer);
   var zipEntries = zip.getEntries();
@@ -88,11 +91,13 @@ function extractFile(buffer,extractFileCallBack)
 
 function processCFStackResponse(dataContainedInFile)
 {
+  console.log('processCFStackResponse');
   return JSON.parse(dataContainedInFile);
 }
 
 function createAMIMachineImage(snapShotDescription,awsStackOutput,callback)
 {
+  console.log('createAMIMachineImage');
   const params = {
     InstanceId: awsStackOutput.InstanceID, /* required */
     Name: `${awsStackOutput.StackName}-${getDate()}`, /* required */
@@ -101,24 +106,32 @@ function createAMIMachineImage(snapShotDescription,awsStackOutput,callback)
   console.log(params);
   ec2.createImage(params, function(err, data) {
     if (err) callback(err,'Unable to create AMI machine image'); // an error occurred
-    else callback(null);           // successful response
+    else callback(null,data);           // successful response
   });
+}
+
+function outputAmiInfo(data,callback)
+{
+  console.log(JSON.stringify(data));
+  callback(null);
 }
 
 function putJobSuccess(jobIdObject, callback)
 {
+  console.log('putJobSuccess');
   const params = {
       jobId: jobIdObject
   };
 
   codepipeline.putJobSuccessResult(params, function(err, data) {
       if(err) callback(err,'Unable to mark codepipeline job as successful');
-      else callback(null,data);
+      else callback(null,'job completed successfully');
   });
 }
 
 function putJobFailed(jobId,err,message,lambdaContext,lambdaCallback)
 {
+  console.log('putJobFailed');
   const params = {
       jobId: jobId,
       failureDetails: {
@@ -129,7 +142,7 @@ function putJobFailed(jobId,err,message,lambdaContext,lambdaCallback)
   };
 
   codepipeline.putJobFailureResult(params, function(err, data) {
-      lambdaCallback(message);
+      lambdaCallback(null,message);
   });
 }
 
