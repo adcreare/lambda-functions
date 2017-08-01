@@ -79,6 +79,9 @@ functions:
   engine:
     handler: ami-creator-engine.handlerequest
 
+    environment:
+      snapShotDescription: ami-creator-engine snapshot  
+
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
@@ -108,8 +111,7 @@ functions:
 #          trigger: PreSignUp
 
 #    Define function environment variables here
-   environment:
-     snapShotDescription: ami-creator-engine snapshot
+
 
 # you can add CloudFormation resource templates here
 #resources:
