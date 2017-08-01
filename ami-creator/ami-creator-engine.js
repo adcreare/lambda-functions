@@ -7,8 +7,7 @@ const s3 = new AWS.S3();
 const ec2 = new AWS.EC2();
 const codepipeline = new AWS.CodePipeline();
 
-const snapShotDescription = 'snap taken by ami-creator-engine';
-const snapShotNamePrefix = 'mytestsnapshot';
+const snapShotDescription = process.env.snapShotDescription;
 
 module.exports.handlerequest = (event, context, callback) => {
 
@@ -44,7 +43,7 @@ function runWorkFlow(inputObject,context,callback)
     [
       async.apply(getFileFromS3,inputObject.bucketname,inputObject.objectkey),
       extractFile,
-      async.apply(createAMIMachineImage,snapShotNamePrefix,snapShotDescription),
+      async.apply(createAMIMachineImage,snapShotDescription),
       async.apply(putJobSuccess,inputObject.codePipelineId)
       //callback(null,'execution completed')
   ],
@@ -92,11 +91,11 @@ function processCFStackResponse(dataContainedInFile)
   return JSON.parse(dataContainedInFile);
 }
 
-function createAMIMachineImage(snapShotNamePrefix,snapShotDescription,awsStackOutput,callback)
+function createAMIMachineImage(snapShotDescription,awsStackOutput,callback)
 {
   const params = {
     InstanceId: awsStackOutput.InstanceID, /* required */
-    Name: `${snapShotNamePrefix}-${getDate()}`, /* required */
+    Name: `${awsStackOutput.StackName}-${getDate()}`, /* required */
     Description: snapShotDescription,
   };
   console.log(params);
