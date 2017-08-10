@@ -13,7 +13,7 @@ const testEventMyStackFileOutput = fs.readFileSync(path+'/sample-events/MyStackO
 const testEventMyStackFileOutputZipped = fs.readFileSync(path+'/sample-events/stackoutput.zip');
 const testEventMyStackFileOutputZippedBadFile = fs.readFileSync(path+'/sample-events/stackoutput-badfile.zip');
 
-var runWorkFlow = myCodeFile.__get__('runWorkFlow');
+var getStackInformationWorkflow = myCodeFile.__get__('getStackInformationWorkflow');
 var validateInput = myCodeFile.__get__('validateInputAndProvideKeyData');
 var extractFile = myCodeFile.__get__('extractFile');
 var getFileFromS3 = myCodeFile.__get__('getFileFromS3');
@@ -24,7 +24,7 @@ describe("main function file", function() {
 
   it("exports as a function", function() {
       assert.typeOf(validateInput, "function");
-      assert.typeOf(runWorkFlow, "function");
+      assert.typeOf(getStackInformationWorkflow, "function");
       assert.typeOf(getFileFromS3, "function");
       assert.typeOf(processCFStackResponse, "function");
       assert.typeOf(createAMIMachineImage, "function");
