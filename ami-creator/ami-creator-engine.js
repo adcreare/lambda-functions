@@ -152,12 +152,6 @@ function createAMIMachineImage(snapShotDescription,awsStackOutput,callback)
   });
 }
 
-function outputAmiInfo(data,callback)
-{
-  console.log(JSON.stringify(data));
-  callback(null);
-}
-
 function putAmiINDynamoDb(tableName,stackName,amiId,callback)
 {
   console.log('stackname object');

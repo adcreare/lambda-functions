@@ -14,11 +14,14 @@ const testEventMyStackFileOutputZipped = fs.readFileSync(path+'/sample-events/st
 const testEventMyStackFileOutputZippedBadFile = fs.readFileSync(path+'/sample-events/stackoutput-badfile.zip');
 
 var getStackInformationWorkflow = myCodeFile.__get__('getStackInformationWorkflow');
+var createAndStoreAMIWorkflow = myCodeFile.__get__('createAndStoreAMIWorkflow');
+var processError = myCodeFile.__get__('processError');
 var validateInput = myCodeFile.__get__('validateInputAndProvideKeyData');
 var extractFile = myCodeFile.__get__('extractFile');
 var getFileFromS3 = myCodeFile.__get__('getFileFromS3');
 var processCFStackResponse = myCodeFile.__get__('processCFStackResponse');
 var createAMIMachineImage = myCodeFile.__get__('createAMIMachineImage');
+var putAmiINDynamoDb = myCodeFile.__get__('putAmiINDynamoDb');
 
 describe("main function file", function() {
 
@@ -28,6 +31,8 @@ describe("main function file", function() {
       assert.typeOf(getFileFromS3, "function");
       assert.typeOf(processCFStackResponse, "function");
       assert.typeOf(createAMIMachineImage, "function");
+      assert.typeOf(createAndStoreAMIWorkflow, "function");
+      assert.typeOf(processError, "function");
   });
 
   it("validateInput works as expected", function() {
