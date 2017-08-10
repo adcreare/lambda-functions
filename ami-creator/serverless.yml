@@ -44,6 +44,30 @@ provider:
        - "codepipeline:PutJobSuccessResult"
        - "codepipeline:PutJobFailureResult"
      Resource: "*"
+   - Effect: "Allow"
+     Action:
+       - "dynamodb:PutItem"
+     Resource:
+       - "Fn::Join":
+         - ""
+         -
+           - "arn:aws:dynamodb:"
+           - "Ref" : "AWS::Region"
+           - ":"
+           - "Ref" : "AWS::AccountId"
+           - ":table/${self:custom.DynamoDBTableName}"
+   - Effect: "Allow"
+     Action:
+       - "cloudformation:DeleteStack"
+     Resource:
+       - "Fn::Join":
+         - ""
+         -
+           - "arn:aws:cloudformation:"
+           - "Ref" : "AWS::Region"
+           - ":"
+           - "Ref" : "AWS::AccountId"
+           - ":stack/*"
 
 
     # - Effect: "Allow"
@@ -80,43 +104,51 @@ functions:
     handler: ami-creator-engine.handlerequest
 
     environment:
-      snapShotDescription: ami-creator-engine snapshot  
-
-#    The following are a few example events you can configure
-#    NOTE: Please make sure to change your handler code to work with those events
-#    Check the event documentation for details
-#    events:
-#      - http:
-#          path: users/create
-#          method: get
-#      - s3: ${env:BUCKET}
-#      - schedule: rate(10 minutes)
-#      - sns: greeter-topic
-#      - stream: arn:aws:dynamodb:region:XXXXXX:table/foo/stream/1970-01-01T00:00:00.000
-#      - alexaSkill
-#      - iot:
-#          sql: "SELECT * FROM 'some_topic'"
-#      - cloudwatchEvent:
-#          event:
-#            source:
-#              - "aws.ec2"
-#            detail-type:
-#              - "EC2 Instance State-change Notification"
-#            detail:
-#              state:
-#                - pending
-#      - cloudwatchLog: '/aws/lambda/hello'
-#      - cognitoUserPool:
-#          pool: MyUserPool
-#          trigger: PreSignUp
-
-#    Define function environment variables here
+      snapShotDescription: ami-creator-engine snapshot
+      dynamodbTableName: ${self:custom.DynamoDBTableName}
 
 
+custom:
+    DynamoDBTableName: ami-store
 # you can add CloudFormation resource templates here
-#resources:
-#  Resources:
-#    NewResource:
+resources:
+  Resources:
+    DynamoDBTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        TableName: ${self:custom.DynamoDBTableName}
+        AttributeDefinitions:
+          - AttributeName: amiid
+            AttributeType: S
+          - AttributeName: imagename
+            AttributeType: S
+
+        KeySchema:
+          - AttributeName: amiid
+            KeyType: HASH
+
+        ProvisionedThroughput:
+          ReadCapacityUnits: "1"
+          WriteCapacityUnits: "1"
+
+        GlobalSecondaryIndexes:
+          -
+            IndexName: ami-lookup-index
+            KeySchema:
+              -
+                AttributeName: imagename
+                KeyType: HASH
+
+            Projection:
+              # NonKeyAttributes:
+              #   - "amiid"
+              #   - "date"
+              ProjectionType: ALL
+
+            ProvisionedThroughput:
+              ReadCapacityUnits: "1"
+              WriteCapacityUnits: "1"
+
 #      Type: AWS::S3::Bucket
 #      Properties:
 #        BucketName: my-new-bucket
