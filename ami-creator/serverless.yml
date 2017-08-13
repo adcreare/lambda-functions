@@ -78,34 +78,7 @@ provider:
            - ":stack/*"
 
 
-    # - Effect: "Allow"
-    #   Action:
-    #     - "s3:*"
-    #   Resource:
-    #     - 'Fn::Join':
-    #       - ''
-    #       -
-    #         - 'arn:aws:s3:::'
-    #         - ${self:custom.s3bucket.${opt:stage}}
-    #     - 'Fn::Join':
-    #       - ''
-    #       -
-    #         - 'arn:aws:s3:::'
-    #         - ${self:custom.s3bucket.${opt:stage}}
-    #         - '/*'
 
-# you can define service wide environment variables here
-#  environment:
-#    variable1: value1
-
-# you can add packaging information here
-#package:
-#  include:
-#    - include-me.js
-#    - include-me-dir/**
-#  exclude:
-#    - exclude-me.js
-#    - exclude-me-dir/**
 
 functions:
   engine:
@@ -152,19 +125,8 @@ resources:
                 KeyType: HASH
 
             Projection:
-              # NonKeyAttributes:
-              #   - "amiid"
-              #   - "date"
               ProjectionType: ALL
 
             ProvisionedThroughput:
               ReadCapacityUnits: "1"
               WriteCapacityUnits: "1"
-
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: my-new-bucket
-#  Outputs:
-#     NewOutput:
-#       Description: "Description for the output"
-#       Value: "Some output value"
