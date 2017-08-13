@@ -95,8 +95,29 @@ functions:
 
 custom:
     DynamoDBTableName: ami-store
+
 # you can add CloudFormation resource templates here
 resources:
+  Outputs:
+    CreateImageExportValue:
+      Value: ${self:service}-${self:provider.stage}-create-image
+      Export:
+        Name: 'ami-engine-create'
+
+    CustomResourceResponderServiceTokenExportValue:
+      Value:
+        "Fn::Join":
+          - ""
+          -
+            - "arn:aws:lambda:"
+            - "Ref" : "AWS::Region"
+            - ":"
+            - "Ref" : "AWS::AccountId"
+            - ":function:"
+            - ${self:service}-${self:provider.stage}-custom-resource-handler
+      Export:
+        Name: 'ami-engine-custom-resource-responder-service-token'
+
   Resources:
     DynamoDBTable:
       Type: "AWS::DynamoDB::Table"
