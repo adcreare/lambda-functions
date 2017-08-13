@@ -23,7 +23,7 @@ var processCFStackResponse = myCodeFile.__get__('processCFStackResponse');
 var createAMIMachineImage = myCodeFile.__get__('createAMIMachineImage');
 var putAmiINDynamoDb = myCodeFile.__get__('putAmiINDynamoDb');
 
-describe("main function file", function() {
+describe("testing ami-creator-engine", function() {
 
   it("exports as a function", function() {
       assert.typeOf(validateInput, "function");
