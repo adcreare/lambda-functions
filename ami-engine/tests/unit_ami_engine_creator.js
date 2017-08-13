@@ -4,7 +4,7 @@ var expect = require("chai").expect;
 var rewire = require('rewire');
 const fs = require('fs');
 
-var myCodeFile = rewire('../ami-creator-engine.js');
+var myCodeFile = rewire('../ami-engine-createimage.js');
 
 const testEvent = require('../sample-events/codepipeline-events.json');
 

@@ -7,7 +7,7 @@ const fs = require('fs');
 
 var AWS = require('aws-sdk');
 
-var myCodeFile = rewire('../ami-custom-resource-responder.js');
+var myCodeFile = rewire('../ami-engine-custom-resource-responder.js');
 var queryDynamoDB = myCodeFile.__get__('queryDynamoDB');
 var findLatestAMI = myCodeFile.__get__('findLatestAMI');
 
