@@ -13,7 +13,7 @@ module.exports.handlerequest = (event, context, callback) => {
 
   console.log("REQUEST RECEIVED:\n" + JSON.stringify(event));
 
-  const amiImageType = event.ResourceProperties.AMITypeName;
+  const amiImageName = event.ResourceProperties.AMIImageName;
 
   // For Delete requests, immediately send a SUCCESS response.
   if (event.RequestType == "Delete") {
@@ -21,16 +21,17 @@ module.exports.handlerequest = (event, context, callback) => {
       return;
   }
 
-  if(typeof(amiImageType) === 'undefined')
+  //if the name of the image isn't set we can't search for it, throw error back to CF stack
+  if(typeof(amiImageName) === 'undefined')
   {
-    console.log('ERROR: The cloudformation custom Resource property "AMITypeName: "value" was NOT set\n Function will now exit');
-    sendResponse(event, context, callback, "FAILED",'the cloudformation custom Resource property "AMITypeName: "value" was NOT set');
+    console.log('ERROR: The cloudformation custom Resource property "AMIImageName: "value" was NOT set\n Function will now exit');
+    sendResponse(event, context, callback, "FAILED",'the cloudformation custom Resource property "AMIImageName: "value" was NOT set');
     return;
   }
 
   async.waterfall(
     [
-    async.apply(queryDynamoDB,dynamodbTableName,amiImageType),
+    async.apply(queryDynamoDB,dynamodbTableName,amiImageName),
     findLatestAMI
   ],
   function(err, results) {
@@ -96,19 +97,11 @@ function queryDynamoDB(tableName,imageName,callback)
     };
 
   dynamodb.query(params, function(err, data) {
-  if (err) callback(err); // an error occurred
-
-  else{
-    if(data.Items.length >= 1)
-    {
-      callback(null,data.Items);           // successful response
+    if (err) callback(err); // an error occurred
+    else{
+      if(data.Items.length >= 1) callback(null,data.Items);           // successful response
+      else callback(`No images found matching: ${imageName} in table ${tableName}`);
     }
-    else
-    {
-      callback(`No images found matching: ${imageName} in table ${tableName}`);
-    }
-
-  }
   });
 }
 
