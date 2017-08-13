@@ -13,15 +13,24 @@ module.exports.handlerequest = (event, context, callback) => {
 
   console.log("REQUEST RECEIVED:\n" + JSON.stringify(event));
 
+  const amiImageType = event.ResourceProperties.AMITypeName;
+
   // For Delete requests, immediately send a SUCCESS response.
   if (event.RequestType == "Delete") {
       sendResponse(event, context, callback, "SUCCESS");
       return;
   }
 
+  if(typeof(amiImageType) === 'undefined')
+  {
+    console.log('ERROR: The cloudformation custom Resource property "AMITypeName: "value" was NOT set\n Function will now exit');
+    sendResponse(event, context, callback, "FAILED",'the cloudformation custom Resource property "AMITypeName: "value" was NOT set');
+    return;
+  }
+
   async.waterfall(
     [
-    async.apply(queryDynamoDB,event,context),
+    async.apply(queryDynamoDB,dynamodbTableName,amiImageType),
     findLatestAMI
   ],
   function(err, results) {
@@ -37,8 +46,9 @@ module.exports.handlerequest = (event, context, callback) => {
     }
     else
     {
-      console.log(`MAJOR ERROR: ${err}`);
-      callback(err,'MAJOR ERROR');
+      console.log(`ERROR: ${err}`);
+      sendResponse(event, context, callback, "FAILED", err);
+      callback(err,'ERROR');
       return;
     }
 
@@ -49,6 +59,8 @@ module.exports.handlerequest = (event, context, callback) => {
 
 function findLatestAMI(arrayOfAMIFromDynamoDB, callback)
 {
+  console.log('findLatestAMI');
+  console.log(arrayOfAMIFromDynamoDB);
   const currentDate = new Date();
   var smallest = parseInt(arrayOfAMIFromDynamoDB[0].timestamp.S);
   smallest = Math.abs(currentDate-smallest);
@@ -71,6 +83,7 @@ function findLatestAMI(arrayOfAMIFromDynamoDB, callback)
 
 function queryDynamoDB(tableName,imageName,callback)
 {
+  console.log('queryDynamodb');
   const params = {
      ExpressionAttributeValues: {
       ":image": {
@@ -84,7 +97,18 @@ function queryDynamoDB(tableName,imageName,callback)
 
   dynamodb.query(params, function(err, data) {
   if (err) callback(err); // an error occurred
-  else     callback(null,data.Items);           // successful response
+
+  else{
+    if(data.Items.length >= 1)
+    {
+      callback(null,data.Items);           // successful response
+    }
+    else
+    {
+      callback(`No images found matching: ${imageName} in table ${tableName}`);
+    }
+
+  }
   });
 }
 
@@ -92,9 +116,16 @@ function queryDynamoDB(tableName,imageName,callback)
 // Send response to the pre-signed S3 URL
 function sendResponse(event, context, callback ,responseStatus, responseData) {
 
+  var responseReason = "See the details in CloudWatch Log Stream: " + context.logStreamName;
+  if (responseStatus==='FAILED') //if we get an error use the responseData as the error message then flush it
+  {
+    responseReason = `${responseData} - ${responseReason}`;
+    responseData = undefined;
+  }
+
     var responseBody = JSON.stringify({
         Status: responseStatus,
-        Reason: "See the details in CloudWatch Log Stream: " + context.logStreamName,
+        Reason: responseReason,
         PhysicalResourceId: context.logStreamName,
         StackId: event.StackId,
         RequestId: event.RequestId,
@@ -103,7 +134,6 @@ function sendResponse(event, context, callback ,responseStatus, responseData) {
     });
 
     console.log("RESPONSE BODY:\n", responseBody);
-
 
 
     var parsedUrl = url.parse(event.ResponseURL);
