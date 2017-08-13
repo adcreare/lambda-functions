@@ -11,7 +11,7 @@
 #
 # Happy Coding!
 
-service: ami-creator # NOTE: update this with your service name
+service: ami-engine # NOTE: update this with your service name
 
 provider:
   name: aws
@@ -81,11 +81,11 @@ provider:
 
 
 functions:
-  engine:
-    handler: ami-creator-engine.handlerequest
+  create-image:
+    handler: ami-engine-createimage.handlerequest
 
     environment:
-      snapShotDescription: ami-creator-engine snapshot
+      snapShotDescription: ami-engine snapshot
       dynamodbTableName: ${self:custom.DynamoDBTableName}
 
   custom-resource-handler:
