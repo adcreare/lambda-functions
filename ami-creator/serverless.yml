@@ -46,7 +46,7 @@ provider:
      Resource: "*"
    - Effect: "Allow"
      Action:
-       - "dynamodb:PutItem"
+       - "dynamodb:*"
      Resource:
        - "Fn::Join":
          - ""
@@ -56,6 +56,14 @@ provider:
            - ":"
            - "Ref" : "AWS::AccountId"
            - ":table/${self:custom.DynamoDBTableName}"
+       - "Fn::Join":
+         - ""
+         -
+           - "arn:aws:dynamodb:"
+           - "Ref" : "AWS::Region"
+           - ":"
+           - "Ref" : "AWS::AccountId"
+           - ":table/${self:custom.DynamoDBTableName}/*"
    - Effect: "Allow"
      Action:
        - "cloudformation:DeleteStack"
@@ -107,6 +115,10 @@ functions:
       snapShotDescription: ami-creator-engine snapshot
       dynamodbTableName: ${self:custom.DynamoDBTableName}
 
+  custom-resource-handler:
+    handler: ami-custom-resource-responder.handlerequest
+    environment:
+      dynamodbTableName: ${self:custom.DynamoDBTableName}
 
 custom:
     DynamoDBTableName: ami-store
