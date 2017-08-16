@@ -88,6 +88,7 @@ functions:
     environment:
       snapShotDescription: ami-engine snapshot
       dynamodbTableName: ${self:custom.DynamoDBTableName}
+      sqsQueueName: ${self:custom.SQSQueueName}
 
   custom-resource-handler:
     handler: ami-custom-resource-responder.handlerequest
@@ -96,6 +97,7 @@ functions:
 
 custom:
     DynamoDBTableName: ami-store
+    SQSQueueName: ami-engine-cleanup-jobs
 
 # you can add CloudFormation resource templates here
 resources:
@@ -120,6 +122,11 @@ resources:
         Name: 'ami-engine-custom-resource-responder-service-token'
 
   Resources:
+    SQSCleanupQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: ${self:custom.SQSQueueName}
+
     DynamoDBTable:
       Type: "AWS::DynamoDB::Table"
       Properties:

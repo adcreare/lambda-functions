@@ -8,9 +8,11 @@ const ec2 = new AWS.EC2();
 const dynamodb = new AWS.DynamoDB();
 const codepipeline = new AWS.CodePipeline();
 const cloudformation = new AWS.CloudFormation();
+const sqs = new AWS.SQS();
 
 const snapShotDescription = process.env.snapShotDescription;
 const dynamodbTableName =  process.env.dynamodbTableName;
+const sqsQueueName =  process.env.sqsQueueName
 
 module.exports.handlerequest = (event, context, callback) => {
 
@@ -119,17 +121,62 @@ function createAndStoreAMIWorkflow(inputObject,stackOutput,context,lambdaCallbac
     {
       processError(err,message,context,inputObject.codePipelineId,lambdaCallback);
     }
-    else {
+    else { // now image is done and stored lets do all the notifcations and set cleanup items
       console.log('job successful: '+JSON.stringify(message));
       putJobSuccess(inputObject.codePipelineId,lambdaCallback);
-      //deleteStack(stackOutput.StackName,lambdaCallback); //only delete if we get a good build - reduce rerun time
+
+      pushCleanupToSQS(generateSQSUrl(context,sqsQueueName),stackOutput.InstanceID,stackOutput.StackName,message.amiID);
+
       return;
+
     }
 
    }
   );
 }
 
+
+
+function pushCleanupToSQS(sqsQueueUrl,instanceID,stackName, amiID)
+{
+  var params = {
+    QueueUrl: sqsQueueUrl,
+    MessageAttributes:{
+      instanceID: instanceID,
+      stackName: stackName,
+      amiID: amiID
+    }
+  };
+
+  sqs.sendMessage(params,function(err,data)
+  {
+    if(err)
+    {
+      console.log('error pushing to sqs - non fatal - however cleanup will now be required (delete stack will fix)');
+    }
+    else {
+      console.log('push to sqs successful');
+      console.log(data);
+    }
+
+  });
+
+}
+
+function generateSQSUrl(context,sqsQueueName)
+{
+  try{
+    let lambdaARNArray = context.invokedFunctionArn.split(':');
+    let region = lambdaARNArray[3];
+    let accountID = lambdaARNArray[4];
+    return `https://sqs.${region}.amazonaws.com/${accountID}/${sqsQueueName}`;
+  }
+  catch (e){
+    console.log('generateSQSUrl failed');
+    return false;
+  }
+
+}
 
 function processError(err,message,context,jobId,callback)
 {
@@ -208,7 +255,7 @@ function putAmiINDynamoDb(tableName,stackName,amiId,callback)
 
   dynamodb.putItem(params,function(err,response){
     if (err) callback(err); // an error occurred
-    else     callback(null,response);           // successful response
+    else     callback(null,{amiID:amiId});           // successful response
   });
 
 }
