@@ -1,0 +1,41 @@
+{
+    "Reservations": [
+        {
+            "Groups": [],
+            "Instances": [
+                {
+                    "AmiLaunchIndex": 0,
+                    "ImageId": "ami-a4c7edb2",
+                    "InstanceId": "i-06a6b6f36049067e8",
+                    "InstanceType": "t2.nano",
+                    "PrivateDnsName": "ip-10-10-0-85.ec2.internal",
+                    "PrivateIpAddress": "10.10.0.85",
+                    "ProductCodes": [],
+                    "PublicDnsName": "",
+                    "State": {
+                        "Code": 80,
+                        "Name": "stopped"
+                    },
+                    "StateTransitionReason": "",
+                    "SubnetId": "subnet-312dd61d",
+                    "VpcId": "vpc-073ad57e",
+                    "Architecture": "x86_64",
+                    "BlockDeviceMappings": [
+                        {
+                            "DeviceName": "/dev/xvda",
+                            "Ebs": {
+                                "AttachTime": "2017-08-15T20:43:40.000Z",
+                                "DeleteOnTermination": true,
+                                "Status": "attached",
+                                "VolumeId": "vol-05160722a2e92afea"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "OwnerId": "11111111",
+            "RequesterId": "1111111",
+            "ReservationId": "r-11111111"
+        }
+    ]
+}
