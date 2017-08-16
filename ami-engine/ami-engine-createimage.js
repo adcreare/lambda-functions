@@ -38,7 +38,7 @@ module.exports.handlerequest = (event, context, callback) => {
   try{
     if (keyData === false) callback(null, { message: 'Incorrect input supplied: '+JSON.stringify(event) });
     else{
-      getStackInformationWorkflow(keyData,context,callback,createAndStoreAMIWorkflow);
+      getStackInformationWorkflow(keyData,context,callback);
     }
   }
   catch (e)
@@ -51,7 +51,7 @@ module.exports.handlerequest = (event, context, callback) => {
 }; //end handlerequest
 
 
-function getStackInformationWorkflow(inputObject,context,lambdaCallback,callbackFunction)
+function getStackInformationWorkflow(inputObject,context,lambdaCallback)
 {
 
   async.waterfall(
@@ -66,12 +66,46 @@ function getStackInformationWorkflow(inputObject,context,lambdaCallback,callback
     }
     else {
       console.log('Get and Process CF Stack information successful: '+JSON.stringify(message));
-      callbackFunction(inputObject,message,context,lambdaCallback);
+      checkMachineIsShutdown(inputObject,message,context,lambdaCallback);
     }
    }
   );
 
 }
+
+function checkMachineIsShutdown(inputObject,stackOutput,context,lambdaCallback)
+{
+  console.log('calling checkMachineIsShutdown');
+  var params = {
+    InstanceIds: [ stackOutput.InstanceID]
+  };
+  ec2.describeInstances(params, function(err, data) {
+    processCheckMachineIsShutdown(inputObject,stackOutput,context,lambdaCallback,err,data);
+  });
+}
+
+function processCheckMachineIsShutdown(inputObject,stackOutput,context,lambdaCallback,err,data)
+{
+  if (err){
+    processError(err,'ec2.describeInstanceStatus error',context,inputObject.codePipelineId,lambdaCallback);
+    return;
+  }
+
+  try
+  {
+    console.log(JSON.stringify(data));
+    if(data.Reservations[0].Instances[0].State.Name === 'stopped') createAndStoreAMIWorkflow(inputObject,stackOutput,context,lambdaCallback);
+
+    else setTimeout(checkMachineIsShutdown(inputObject,stackOutput,context,lambdaCallback),15000);
+
+  }
+  catch (e)
+  {
+      processError(err,'ec2.describeInstanceStatus processing error',context,inputObject.codePipelineId,lambdaCallback);
+  }
+
+}
+
 
 function createAndStoreAMIWorkflow(inputObject,stackOutput,context,lambdaCallback)
 {

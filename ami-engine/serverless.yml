@@ -38,6 +38,7 @@ provider:
    - Effect: "Allow"
      Action:
        - "ec2:CreateImage"
+       - "ec2:DescribeInstances"
      Resource: "*"
    - Effect: "Allow"
      Action:
