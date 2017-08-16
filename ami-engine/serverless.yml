@@ -45,6 +45,26 @@ provider:
        - "codepipeline:PutJobSuccessResult"
        - "codepipeline:PutJobFailureResult"
      Resource: "*"
+
+   - Effect: "Allow"
+     Action:
+       - "sqs:ChangeMessageVisibility"
+       - "sqs:ChangeMessageVisibilityBatch"
+       - "sqs:DeleteMessage"
+       - "sqs:GetQueueUrl"
+       - "sqs:ListDeadLetterSourceQueues"
+       - "sqs:ReceiveMessage"
+       - "sqs:SendMessage"
+     Resource:
+       - "Fn::Join":
+         - ""
+         -
+           - "arn:aws:sqs:"
+           - "Ref" : "AWS::Region"
+           - ":"
+           - "Ref" : "AWS::AccountId"
+           - ":${self:custom.SQSQueueName}"    
+
    - Effect: "Allow"
      Action:
        - "dynamodb:*"

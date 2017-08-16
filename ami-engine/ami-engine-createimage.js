@@ -139,20 +139,20 @@ function createAndStoreAMIWorkflow(inputObject,stackOutput,context,lambdaCallbac
 
 function pushCleanupToSQS(sqsQueueUrl,instanceID,stackName, amiID)
 {
+
+  console.log('debug pushCleanupToSQS');
+  console.log(`${sqsQueueUrl} ${instanceID} ${stackName} ${amiID}`);
+  let messageBody = {instanceID: instanceID,stackName: stackName,amiID: amiID};
   var params = {
     QueueUrl: sqsQueueUrl,
-    MessageAttributes:{
-      instanceID: instanceID,
-      stackName: stackName,
-      amiID: amiID
-    }
+    MessageBody: JSON.stringify(messageBody)
   };
 
   sqs.sendMessage(params,function(err,data)
   {
     if(err)
     {
-      console.log('error pushing to sqs - non fatal - however cleanup will now be required (delete stack will fix)');
+      console.log('error pushing to sqs - non fatal - however cleanup will now be required (delete stack will fix. Error value:'+err);
     }
     else {
       console.log('push to sqs successful');
