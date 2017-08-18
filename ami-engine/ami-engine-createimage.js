@@ -12,7 +12,7 @@ const sqs = new AWS.SQS();
 
 const snapShotDescription = process.env.snapShotDescription;
 const dynamodbTableName =  process.env.dynamodbTableName;
-const sqsQueueName =  process.env.sqsQueueName
+const sqsQueueName =  process.env.sqsQueueName;
 
 module.exports.handlerequest = (event, context, callback) => {
 
