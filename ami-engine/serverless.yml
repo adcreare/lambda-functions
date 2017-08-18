@@ -39,6 +39,7 @@ provider:
      Action:
        - "ec2:CreateImage"
        - "ec2:DescribeInstances"
+       - "ec2:DescribeImages"
      Resource: "*"
    - Effect: "Allow"
      Action:
@@ -63,7 +64,7 @@ provider:
            - "Ref" : "AWS::Region"
            - ":"
            - "Ref" : "AWS::AccountId"
-           - ":${self:custom.SQSQueueName}"    
+           - ":${self:custom.SQSQueueName}"
 
    - Effect: "Allow"
      Action:
@@ -114,6 +115,11 @@ functions:
     handler: ami-custom-resource-responder.handlerequest
     environment:
       dynamodbTableName: ${self:custom.DynamoDBTableName}
+
+  cleanup:
+    handler: ami-engine-cleanup-sqs.handlerequest
+    environment:
+      sqsQueueName: ${self:custom.SQSQueueName}
 
 custom:
     DynamoDBTableName: ami-store
