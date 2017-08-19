@@ -120,6 +120,8 @@ functions:
     handler: ami-engine-cleanup-sqs.handlerequest
     environment:
       sqsQueueName: ${self:custom.SQSQueueName}
+    events:
+      - schedule: rate(2 hours)
 
 custom:
     DynamoDBTableName: ami-store

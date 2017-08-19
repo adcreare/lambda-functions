@@ -21,7 +21,9 @@ module.exports.handlerequest = (event, context, callback) => {
         let error = `Error response received talking to sqs - err object: ${err}`;
         console.log(error);
         callback(err,error);
+        return;
       }
+
       else
       {
         processSQSResponse(response,sqsURL,callback);
@@ -35,7 +37,7 @@ module.exports.handlerequest = (event, context, callback) => {
 function processSQSResponse(response,sqsURL,lambdaCallback)
 {
   try{
-    if(response.Messages === 'undefined')
+    if(typeof(response.Messages) === 'undefined')
     {
       console.log('No messages to process in sqs');
       lambdaCallback(null,' no messages to process in sqs');
