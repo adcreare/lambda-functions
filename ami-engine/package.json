@@ -4,7 +4,7 @@
   "description": "automates taking ami's from instances",
   "main": "ami-creator-engine.js",
   "scripts": {
-    "tests": "mocha tests"
+    "test": "mocha tests"
   },
   "author": "David",
   "license": "ISC",
@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "chai": "^4.1.0",
+    "mocha": "^4.0.1",
     "rewire": "^2.5.2"
   }
 }
