@@ -1,5 +1,5 @@
 import * as AdmZip from 'adm-zip';
-import { Callback, Context, Handler } from 'aws-lambda';
+import { Callback, Handler } from 'aws-lambda';
 import CodePipeline = require('aws-sdk/clients/codepipeline');
 import EC2 = require ('aws-sdk/clients/ec2');
 import S3 = require('aws-sdk/clients/s3');
@@ -22,14 +22,14 @@ export interface StackOutput {
   StackName: string;
 }
 
-export const hello: Handler = async (event: any, context: Context, cb: Callback) => {
+export const run: Handler = async (event: any, context: any, cb: Callback) => {
 
   const keyData = validateInputAndProvideKeyData(event);
   console.log(keyData);
 
   try {
 
-    if (Object.is(keyData, null)) {
+    if (keyData === undefined) {
       cb(null, { message: 'Incorrect input supplied: ' + JSON.stringify(event) });
       return;
     }

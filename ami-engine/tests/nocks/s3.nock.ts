@@ -5,9 +5,9 @@ export default function(){
   nock('https://s3.amazonaws.com/')
   .persist()
   .get(() =>  true) // match all
-  .reply(200, (uri) => {
+  .reply(200, (uri, requestBody) => {
 
-    return '';
+    return 'sdsdsdds';
   });
 
 
