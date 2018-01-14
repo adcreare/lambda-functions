@@ -9,7 +9,7 @@ module.exports = function (wallaby) {
     files: [
       './**/*.ts',
       { pattern: '**/*test.ts', ignore: true },
-      { pattern: '/tests/sample-events/*', ignore: true}
+      { pattern: '**/sample-events/*', ignore: false, instrument: false, ignore: false }
     ],
 
     tests: [

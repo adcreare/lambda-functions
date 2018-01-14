@@ -3,13 +3,18 @@ import { Callback, Handler } from 'aws-lambda';
 import CodePipeline = require('aws-sdk/clients/codepipeline');
 import EC2 = require ('aws-sdk/clients/ec2');
 import S3 = require('aws-sdk/clients/s3');
+import StepFunction = require('aws-sdk/clients/stepfunctions');
 
+import {StateMachineInput} from './objects/StateMachine';
+
+
+const codepipeline = new CodePipeline();
 const ec2 = new EC2();
 const s3 = new S3();
-const codepipeline = new CodePipeline();
+const stepFunctions = new StepFunction();
 
 const snapShotDescription = process.env.snapShotDescription;
-
+const stateMachineArnStr = process.env.stateMachineArn;
 
 export interface CodePipeLineJob {
   S3Bucket: string;
@@ -46,12 +51,32 @@ export const run: Handler = async (event: any, context: any, cb: Callback) => {
 
     // take image
     const imageId = await triggerCreateAMI(stackInfo, snapShotDescription);
-    await putCodePipelineJobSuccess(keyData.JobId);
+
+    // if we don't have the state machine setup - just exit
+    if (stateMachineArnStr === undefined)
+    {
+      await putCodePipelineJobSuccess(keyData.JobId);
+    }
+    else
+    {
+      const inputValue: StateMachineInput = {
+        ImageId: imageId,
+        CodePipelineJobId: keyData.JobId
+      };
+
+      const params = {
+        stateMachineArn: stateMachineArnStr, /* required */
+        input: JSON.stringify(inputValue)
+      };
+
+      await stepFunctions.startExecution(params).promise();
+    }
 
     cb(null, 'completed sucessfully');
 
   }
   catch (e) {
+    console.log(e);
     putJobFailed(keyData.JobId, String(e), context, cb);
   }
 
@@ -96,6 +121,8 @@ async function machineIsShutdown(instanceId: string): Promise<boolean>
   }
   catch (e)
   {
+    throw(e);
+    console.log(e);
     return false;
   }
 }
