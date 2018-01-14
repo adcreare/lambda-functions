@@ -1,13 +1,16 @@
-service: ami-engine # NOTE: update this with your service name
+service:
+  name: SABS-lambda
+
+# Add the serverless-webpack plugin
+plugins:
+  - serverless-webpack
 
 provider:
   name: aws
   runtime: nodejs6.10
+  stage: ${opt:stage, 'prod'}
 
-# you can overwrite defaults here
-  stage: prod
-#  region: us-east-1
-# you can add statements to the Lambda function's IAM Role here
+
   iamRoleStatements:
    - Effect: "Allow"
      Action:
@@ -34,45 +37,26 @@ provider:
        - "codepipeline:PutJobFailureResult"
      Resource: "*"
 
-   - Effect: "Allow"
-     Action:
-       - "sqs:ChangeMessageVisibility"
-       - "sqs:ChangeMessageVisibilityBatch"
-       - "sqs:DeleteMessage"
-       - "sqs:GetQueueUrl"
-       - "sqs:ListDeadLetterSourceQueues"
-       - "sqs:ReceiveMessage"
-       - "sqs:SendMessage"
-     Resource:
-       - "Fn::Join":
-         - ""
-         -
-           - "arn:aws:sqs:"
-           - "Ref" : "AWS::Region"
-           - ":"
-           - "Ref" : "AWS::AccountId"
-           - ":${self:custom.SQSQueueName}"
-
-   - Effect: "Allow"
-     Action:
-       - "dynamodb:*"
-     Resource:
-       - "Fn::Join":
-         - ""
-         -
-           - "arn:aws:dynamodb:"
-           - "Ref" : "AWS::Region"
-           - ":"
-           - "Ref" : "AWS::AccountId"
-           - ":table/${self:custom.DynamoDBTableName}"
-       - "Fn::Join":
-         - ""
-         -
-           - "arn:aws:dynamodb:"
-           - "Ref" : "AWS::Region"
-           - ":"
-           - "Ref" : "AWS::AccountId"
-           - ":table/${self:custom.DynamoDBTableName}/*"
+  #  - Effect: "Allow"
+  #    Action:
+  #      - "dynamodb:*"
+  #    Resource:
+  #      - "Fn::Join":
+  #        - ""
+  #        -
+  #          - "arn:aws:dynamodb:"
+  #          - "Ref" : "AWS::Region"
+  #          - ":"
+  #          - "Ref" : "AWS::AccountId"
+  #          - ":table/${self:custom.DynamoDBTableName}"
+  #      - "Fn::Join":
+  #        - ""
+  #        -
+  #          - "arn:aws:dynamodb:"
+  #          - "Ref" : "AWS::Region"
+  #          - ":"
+  #          - "Ref" : "AWS::AccountId"
+  #          - ":table/${self:custom.DynamoDBTableName}/*"
    - Effect: "Allow"
      Action:
        - "cloudformation:DeleteStack"
@@ -88,87 +72,7 @@ provider:
 
 
 functions:
-  create-image:
-    handler: ami-engine-create-ami.handlerequest
-
+  create-ami:
+    handler: src/create-ami.run
     environment:
-      snapShotDescription: ami-engine snapshot
-      dynamodbTableName: ${self:custom.DynamoDBTableName}
-      sqsQueueName: ${self:custom.SQSQueueName}
-
-  custom-resource-handler:
-    handler: ami-engine-custom-resource-responder.handlerequest
-    environment:
-      dynamodbTableName: ${self:custom.DynamoDBTableName}
-
-  cleanup:
-    handler: ami-engine-cleanup-sqs.handlerequest
-    environment:
-      sqsQueueName: ${self:custom.SQSQueueName}
-    events:
-      - schedule: rate(2 hours)
-
-custom:
-    DynamoDBTableName: ami-store
-    SQSQueueName: ami-engine-cleanup-jobs
-
-# you can add CloudFormation resource templates here
-resources:
-  Outputs:
-    CreateImageExportValue: # create CFN export value 
-      Value: ${self:service}-${self:provider.stage}-create-image
-      Export:
-        Name: 'ami-engine-create'
-
-    CustomResourceResponderServiceTokenExportValue:
-      Value:
-        "Fn::Join":
-          - ""
-          -
-            - "arn:aws:lambda:"
-            - "Ref" : "AWS::Region"
-            - ":"
-            - "Ref" : "AWS::AccountId"
-            - ":function:"
-            - ${self:service}-${self:provider.stage}-custom-resource-handler
-      Export:
-        Name: 'ami-engine-custom-resource-responder-service-token'
-
-  Resources:
-    SQSCleanupQueue: #SQS queue
-      Type: "AWS::SQS::Queue"
-      Properties:
-        QueueName: ${self:custom.SQSQueueName}
-
-    DynamoDBTable:
-      Type: "AWS::DynamoDB::Table"
-      Properties:
-        TableName: ${self:custom.DynamoDBTableName}
-        AttributeDefinitions:
-          - AttributeName: amiid
-            AttributeType: S
-          - AttributeName: imagename
-            AttributeType: S
-
-        KeySchema:
-          - AttributeName: amiid
-            KeyType: HASH
-
-        ProvisionedThroughput:
-          ReadCapacityUnits: "1"
-          WriteCapacityUnits: "1"
-
-        GlobalSecondaryIndexes:
-          -
-            IndexName: ami-lookup-index
-            KeySchema:
-              -
-                AttributeName: imagename
-                KeyType: HASH
-
-            Projection:
-              ProjectionType: ALL
-
-            ProvisionedThroughput:
-              ReadCapacityUnits: "1"
-              WriteCapacityUnits: "1"
+      snapShotDescription: SABS engine snapshot

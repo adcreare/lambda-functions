@@ -1,21 +1,45 @@
 {
-  "name": "ami-creator",
-  "version": "1.0.0",
-  "description": "automates taking ami's from instances",
-  "main": "ami-creator-engine.js",
+  "name": "SABS",
+  "version": "0.0.1",
+  "description": "Serverless AMI builidng system (SABS)",
+  "main": "handler.js",
   "scripts": {
-    "test": "mocha tests"
+    "test": "export AWS_REGION=us-east-1 && export AWS_ACCESS_KEY_ID=no && export AWS_SECRET_ACCESS_KEY=no && jest"
   },
-  "author": "David",
-  "license": "ISC",
   "dependencies": {
     "adm-zip": "^0.4.7",
-    "async": "^2.5.0",
-    "aws-sdk": "^2.100.0"
+    "aws-sdk": "^2.181.0"
   },
   "devDependencies": {
-    "chai": "^4.1.0",
-    "mocha": "^4.0.1",
-    "rewire": "^2.5.2"
+    "@types/adm-zip": "^0.4.31",
+    "@types/aws-lambda": "0.0.22",
+    "@types/node": "^8.0.57",
+    "jest": "^22.0.6",
+    "nock": "^9.1.6",
+    "serverless-webpack": "^4.0.0",
+    "ts-jest": "^22.0.1",
+    "ts-loader": "^2.3.7",
+    "typescript": "^2.5.2",
+    "webpack": "^3.6.0"
+  },
+  "author": "Adcreare https://github.com/adcreare https://commmscentral.net",
+  "license": "MIT",
+  "jest": {
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "src/**/*.ts"
+    ],
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
   }
 }
