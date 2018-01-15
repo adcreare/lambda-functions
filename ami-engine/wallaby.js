@@ -10,6 +10,7 @@ module.exports = function (wallaby) {
   return {
     files: [
       './**/*.ts',
+      './src/*.js',
       { pattern: '**/*test.ts', ignore: true },
       { pattern: '**/sample-events/*', ignore: false, instrument: false, ignore: false }
     ],

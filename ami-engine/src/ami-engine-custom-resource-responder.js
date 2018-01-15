@@ -13,7 +13,7 @@ module.exports.run = (event, context, callback) => {
 
   console.log("REQUEST RECEIVED:\n" + JSON.stringify(event));
 
-  const amiImageName = event.ResourceProperties.AMIImageName;
+  
 
   // For Delete requests, immediately send a SUCCESS response.
   if (event.RequestType == "Delete") {
@@ -22,12 +22,16 @@ module.exports.run = (event, context, callback) => {
   }
 
   //if the name of the image isn't set we can't search for it, throw error back to CF stack
-  if(typeof(amiImageName) === 'undefined')
-  {
+  let amiImageName;
+  try{
+    amiImageName = event.ResourceProperties.AMIImageName;
+  }
+  catch(e){
     console.log('ERROR: The cloudformation custom Resource property "AMIImageName: "value" was NOT set\n Function will now exit');
     sendResponse(event, context, callback, "FAILED",'the cloudformation custom Resource property "AMIImageName: "value" was NOT set');
     return;
   }
+  
 
   async.waterfall(
     [
