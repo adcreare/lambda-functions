@@ -1,9 +1,15 @@
 service:
   name: SABS-lambda
 
+
 # Add the serverless-webpack plugin
 plugins:
   - serverless-webpack
+  - serverless-step-functions
+  - serverless-pseudo-parameters
+
+custom:
+    DynamoDBTableName: ami-store
 
 provider:
   name: aws
@@ -37,26 +43,26 @@ provider:
        - "codepipeline:PutJobFailureResult"
      Resource: "*"
 
-  #  - Effect: "Allow"
-  #    Action:
-  #      - "dynamodb:*"
-  #    Resource:
-  #      - "Fn::Join":
-  #        - ""
-  #        -
-  #          - "arn:aws:dynamodb:"
-  #          - "Ref" : "AWS::Region"
-  #          - ":"
-  #          - "Ref" : "AWS::AccountId"
-  #          - ":table/${self:custom.DynamoDBTableName}"
-  #      - "Fn::Join":
-  #        - ""
-  #        -
-  #          - "arn:aws:dynamodb:"
-  #          - "Ref" : "AWS::Region"
-  #          - ":"
-  #          - "Ref" : "AWS::AccountId"
-  #          - ":table/${self:custom.DynamoDBTableName}/*"
+   - Effect: "Allow"
+     Action:
+       - "dynamodb:*"
+     Resource:
+       - "Fn::Join":
+         - ""
+         -
+           - "arn:aws:dynamodb:"
+           - "Ref" : "AWS::Region"
+           - ":"
+           - "Ref" : "AWS::AccountId"
+           - ":table/${self:custom.DynamoDBTableName}"
+       - "Fn::Join":
+         - ""
+         -
+           - "arn:aws:dynamodb:"
+           - "Ref" : "AWS::Region"
+           - ":"
+           - "Ref" : "AWS::AccountId"
+           - ":table/${self:custom.DynamoDBTableName}/*"
    - Effect: "Allow"
      Action:
        - "cloudformation:DeleteStack"
@@ -70,9 +76,112 @@ provider:
            - "Ref" : "AWS::AccountId"
            - ":stack/*"
 
+    - Effect: "Allow"
+      Action:
+        - "states:StartExecution"
+      Resource:
+        - "*"
 
 functions:
   create-ami:
     handler: src/create-ami.run
     environment:
       snapShotDescription: SABS engine snapshot
+      stateMachineArn: TODO: 
+
+  ami-build-complete:
+    handler: src/ami-build-complete.run
+    environment:
+      dynamodbTableName: ${self:custom.DynamoDBTableName}
+
+  custom-resource-handler:
+    handler: src/ami-engine-custom-resource-responder.handlerequest
+    environment:
+      dynamodbTableName: ${self:custom.DynamoDBTableName}
+
+stepFunctions:
+  stateMachines:
+    hellostepfunc1:
+      name: SABS-check-ami-built
+      definition:
+        Comment: "Check if the ami build has completed or not"
+        StartAt: CheckAMIComplete
+        States:
+          Wait:
+            Type: Wait
+            Seconds: 30
+            Next: CheckAMIComplete
+          CheckAMIComplete:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-ami-build-complete"
+            Next: ChoiceState
+          ChoiceState:
+            Type: Choice
+            Choices:
+              -
+                Variable: $.AMIBuildComplete
+                BooleanEquals: false,
+                Next: Wait
+              - 
+                Variable: $.AMIBuildComplete
+                BooleanEquals: true,
+                Next: FinalState
+          FinalState:
+            Type: Pass
+            End: true
+
+# you can add CloudFormation resource templates here
+resources:
+  Outputs:
+    CreateImageExportValue: # create CFN export value 
+      Value: ${self:service}-${self:provider.stage}-create-ami
+      Export:
+        Name: 'ami-engine-create'
+
+    CustomResourceResponderServiceTokenExportValue:
+      Value:
+        "Fn::Join":
+          - ""
+          -
+            - "arn:aws:lambda:"
+            - "Ref" : "AWS::Region"
+            - ":"
+            - "Ref" : "AWS::AccountId"
+            - ":function:"
+            - ${self:service}-${self:provider.stage}-custom-resource-handler
+      Export:
+        Name: 'ami-engine-custom-resource-responder-service-token'
+
+  Resources:
+    DynamoDBTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        TableName: ${self:custom.DynamoDBTableName}
+        AttributeDefinitions:
+          - AttributeName: amiid
+            AttributeType: S
+          - AttributeName: imagename
+            AttributeType: S
+
+        KeySchema:
+          - AttributeName: amiid
+            KeyType: HASH
+
+        ProvisionedThroughput:
+          ReadCapacityUnits: "1"
+          WriteCapacityUnits: "1"
+
+        GlobalSecondaryIndexes:
+          -
+            IndexName: ami-lookup-index
+            KeySchema:
+              -
+                AttributeName: imagename
+                KeyType: HASH
+
+            Projection:
+              ProjectionType: ALL
+
+            ProvisionedThroughput:
+              ReadCapacityUnits: "1"
+              WriteCapacityUnits: "1"

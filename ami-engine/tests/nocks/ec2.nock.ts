@@ -2,7 +2,6 @@ import * as nock from 'nock';
 
 export default function(){
 
-  nock.disableNetConnect();
   nock('https://ec2.us-east-1.amazonaws.com/')
   .persist()
   .post('/')
@@ -35,6 +34,19 @@ export default function(){
         + `</item>`
       + ` </reservationSet>`
       + `</DescribeInstancesResponse>`;
+    }
+
+    if (requestBody.indexOf('Action=DescribeImages') > -1)
+    {
+      response = `<DescribeImagesResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">`
+                  + `<requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId> `
+                    + `<imagesSet>`
+                      + `<item>`
+                        + `<imageId>ami-1a2b3c4d</imageId>`
+                        + `<imageState>available</imageState>`
+                      + `</item>`
+                    + `</imagesSet>`
+                + `</DescribeImagesResponse>`;
     }
 
     return response;

@@ -2,6 +2,8 @@
 process.env.AWS_REGION = 'us-east-1';
 process.env.AWS_ACCESS_KEY_ID = 'noaccesskeyhere';
 process.env.AWS_SECRET_ACCESS_KEY = 'nosecretkeyhere';
+process.env.dynamodbTableName = 'myTable';
+process.env.snapShotDescription = 'my snapshot';
 
 module.exports = function (wallaby) {
 

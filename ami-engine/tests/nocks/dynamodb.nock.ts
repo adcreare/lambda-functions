@@ -7,28 +7,7 @@ export default function()
   .post('/')
   .reply(200, (uriRequest, body) => {
 
-    const response = {
-      Item: {
-        callid: {
-          S: 'test-Dynamodb-Call-ID'
-        },
-        Caller: {
-          S: 'test-Dynamodb-Caller'
-        },
-        CallerCity: {
-          S: 'test-Dynamodb-CallerCity'
-        },
-        CallerCountry: {
-          S: 'test-Dynamodb-CallerCountry'
-        },
-        CallerState: {
-          S: 'test-Dynamodb-CallerState'
-        },
-        CallerZip: {
-          S: 'test-Dynamodb-CallerZip'
-        }
-      }
-    };
+    const response = {}
     return response;
   });
 

@@ -30,8 +30,6 @@ export interface StackOutput {
 export const run: Handler = async (event: any, context: any, cb: Callback) => {
 
   const keyData = validateInputAndProvideKeyData(event);
-  console.log(keyData);
-
   try {
 
     if (keyData === undefined) {
@@ -61,7 +59,9 @@ export const run: Handler = async (event: any, context: any, cb: Callback) => {
     {
       const inputValue: StateMachineInput = {
         ImageId: imageId,
-        CodePipelineJobId: keyData.JobId
+        CodePipelineJobId: keyData.JobId,
+        AMIBuildComplete: false,
+        ImageName: stackInfo.StackName
       };
 
       const params = {
