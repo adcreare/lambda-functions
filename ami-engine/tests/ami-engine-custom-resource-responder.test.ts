@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as nock from 'nock';
-import {run} from '../src/ami-engine-custom-resource-responder.js';
+import {run} from '../src/ami-engine-custom-resource-responder';
 
 import customResourceNock from './nocks/customResourceCallback.nock';
 import dynamoDBNock from './nocks/dynamodb.nock';
@@ -9,7 +9,7 @@ import ec2Nock from './nocks/ec2.nock';
 
 
 customResourceNock();
-dynamoDBNock();
+
 nock.disableNetConnect();
 
 describe('Test responder', () => {
@@ -61,7 +61,7 @@ describe('Test responder', () => {
 
 
   it('Test query with full ami', async (done) => {
-
+    dynamoDBNock();
     const event = {
       ResourceProperties: {
         AMIImageName: 'special-test-ami'
@@ -80,6 +80,25 @@ describe('Test responder', () => {
 
   });
 
+  it('Test query with missing AMI', async (done) => {
+
+    const event = {
+      ResourceProperties: {
+        AMIImageName: 'ami'
+      },
+      ResponseURL: 'https://cloudformation.callback.url.missingami.local',
+      RequestType: 'Create' };
+
+    run(event, {}, (err, result) => {
+
+      assert.strictEqual(err, null);
+      assert.strictEqual(result, 'completed');
+
+      done();
+
+    });
+
+  });
 
 
 }); // end describe

@@ -87,7 +87,7 @@ functions:
     handler: src/create-ami.run
     environment:
       snapShotDescription: SABS engine snapshot
-      stateMachineArn: TODO: 
+      stateMachineArn: ${self:resources.Outputs.SABS-check-ami-built.Value}
 
   ami-build-complete:
     handler: src/ami-build-complete.run
