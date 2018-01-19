@@ -107,7 +107,7 @@ functions:
 stepFunctions:
   stateMachines:
     hellostepfunc1:
-      name: SABScheckamibuilt
+      name: SABScheckamibuild
       definition:
         Comment: "Check if the ami build has completed or not"
         StartAt: WaitState
@@ -140,13 +140,9 @@ resources:
     CreateImageExportValue: # create CFN export value 
       Value: ${self:service}-${self:provider.stage}-create-ami
       Export:
-        Name: 'SABS-get-latest-ami'
-    MyStateMachine:
-      Description: The ARN of the state machine
-      Value:
-        Ref: SABScheckamibuilt
+        Name: 'SABS-create-ami' # <- cloudformation export value used by code pipeline to know how to trigger an AMI creation
 
-    CustomResourceResponderServiceTokenExportValue:
+    CustomResourceResponderServiceTokenExportValue: # create CFN export value 
       Value:
         "Fn::Join":
           - ""
@@ -158,7 +154,14 @@ resources:
             - ":function:"
             - ${self:service}-${self:provider.stage}-custom-resource-handler
       Export:
-        Name: 'SABS-custom-resource-responder-service-token'
+        Name: 'SABS-custom-resource-get-what-ami-to-use' # <- cloudformation export value used by stacks to query what AMI they should use
+
+    MyStateMachine:
+      Description: The ARN of the state machine
+      Value:
+        Ref: SABScheckamibuild
+
+
 
   Resources:
     DynamoDBTable:
