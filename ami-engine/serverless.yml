@@ -100,7 +100,7 @@ functions:
       dynamodbTableName: ${self:custom.DynamoDBTableName}
 
   custom-resource-handler:
-    handler: src/ami-engine-custom-resource-responder.handlerequest
+    handler: src/ami-engine-custom-resource-responder.run
     environment:
       dynamodbTableName: ${self:custom.DynamoDBTableName}
 
