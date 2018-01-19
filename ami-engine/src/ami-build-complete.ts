@@ -20,7 +20,7 @@ export const run: Handler = async (event: StateMachineInput, context: any, cb: C
     if (amiComplete(event.ImageId))
     {
       await putAmiINDynamoDb(tableName, event);
-      await cloudformation.deleteStack({StackName: event.ImageName});
+      await cloudformation.deleteStack({StackName: event.ImageName}).promise();
       event.AMIBuildComplete = true;
     }
 

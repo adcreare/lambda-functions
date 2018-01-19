@@ -3,6 +3,7 @@ import * as nock from 'nock';
 import {run} from '../src/ami-build-complete';
 import {StateMachineInput} from '../src/objects/StateMachine';
 
+import cloudFormationNock from './nocks/cloudformation.nock';
 import codePipeLineNock from './nocks/codepipeline.nock';
 import dynamodbNock from './nocks/dynamodb.nock';
 import ec2Nock from './nocks/ec2.nock';
@@ -18,6 +19,7 @@ describe('ami-build-complete tests', () => {
   dynamodbNock();
   ec2Nock();
   s3Nock();
+  cloudFormationNock();
 
   it('full test run', async (done) => {
 
