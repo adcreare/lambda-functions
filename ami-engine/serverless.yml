@@ -1,6 +1,12 @@
 service:
   name: SABS-lambda
 
+package:
+  exclude: 
+    - tests/**
+    - coverage/**
+  include:
+    - src/**
 
 # Add the serverless-webpack plugin
 plugins:
@@ -9,12 +15,12 @@ plugins:
   - serverless-pseudo-parameters
 
 custom:
-    DynamoDBTableName: ami-store
+    DynamoDBTableName: SABS-ami-store
 
 provider:
   name: aws
   runtime: nodejs6.10
-  stage: ${opt:stage, 'prod'}
+  stage: prod
 
 
   iamRoleStatements:
@@ -75,11 +81,10 @@ provider:
            - ":"
            - "Ref" : "AWS::AccountId"
            - ":stack/*"
-
-    - Effect: "Allow"
-      Action:
+   - Effect: "Allow"
+     Action:
         - "states:StartExecution"
-      Resource:
+     Resource:
         - "*"
 
 functions:
@@ -87,7 +92,7 @@ functions:
     handler: src/create-ami.run
     environment:
       snapShotDescription: SABS engine snapshot
-      stateMachineArn: ${self:resources.Outputs.SABS-check-ami-built.Value}
+      stateMachineArn: ${self:resources.Outputs.MyStateMachine.Value}
 
   ami-build-complete:
     handler: src/ami-build-complete.run
@@ -102,12 +107,12 @@ functions:
 stepFunctions:
   stateMachines:
     hellostepfunc1:
-      name: SABS-check-ami-built
+      name: SABScheckamibuilt
       definition:
         Comment: "Check if the ami build has completed or not"
-        StartAt: CheckAMIComplete
+        StartAt: WaitState
         States:
-          Wait:
+          WaitState:
             Type: Wait
             Seconds: 30
             Next: CheckAMIComplete
@@ -118,14 +123,13 @@ stepFunctions:
           ChoiceState:
             Type: Choice
             Choices:
-              -
-                Variable: $.AMIBuildComplete
-                BooleanEquals: false,
-                Next: Wait
-              - 
-                Variable: $.AMIBuildComplete
-                BooleanEquals: true,
+              - Variable: "$.AMIBuildComplete"
+                BooleanEquals: false
+                Next: WaitState
+              - Variable: "$.AMIBuildComplete"
+                BooleanEquals: true
                 Next: FinalState
+            Default: WaitState
           FinalState:
             Type: Pass
             End: true
@@ -136,7 +140,11 @@ resources:
     CreateImageExportValue: # create CFN export value 
       Value: ${self:service}-${self:provider.stage}-create-ami
       Export:
-        Name: 'ami-engine-create'
+        Name: 'SABS-get-latest-ami'
+    MyStateMachine:
+      Description: The ARN of the state machine
+      Value:
+        Ref: SABScheckamibuilt
 
     CustomResourceResponderServiceTokenExportValue:
       Value:
@@ -150,7 +158,7 @@ resources:
             - ":function:"
             - ${self:service}-${self:provider.stage}-custom-resource-handler
       Export:
-        Name: 'ami-engine-custom-resource-responder-service-token'
+        Name: 'SABS-custom-resource-responder-service-token'
 
   Resources:
     DynamoDBTable:
