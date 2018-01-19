@@ -122,8 +122,6 @@ async function machineIsShutdown(instanceId: string): Promise<boolean>
   catch (e)
   {
     throw(e);
-    console.log(e);
-    return false;
   }
 }
 
