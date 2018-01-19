@@ -22,6 +22,11 @@ export const run: Handler = async (event: StateMachineInput, context: any, cb: C
       await putAmiINDynamoDb(tableName, event);
       await cloudformation.deleteStack({StackName: event.ImageName}).promise();
       event.AMIBuildComplete = true;
+
+
+      // temp cp job complete
+      await codepipeline.putJobSuccessResult({jobId: event.CodePipelineJobId}).promise();
+
     }
 
   }
