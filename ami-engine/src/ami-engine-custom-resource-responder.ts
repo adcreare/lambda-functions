@@ -14,6 +14,7 @@ export const run: Handler = async (event, context, cb: Callback) => {
 
   // For Delete requests, immediately send a SUCCESS response.
   if (event.RequestType === 'Delete') {
+      console.log('Delete received');
       sendResponse(event, context, cb, 'SUCCESS');
       return;
   }
@@ -102,7 +103,7 @@ function queryDynamoDB(tableName, imageName)
 
 
 // Send response to the pre-signed S3 URL
-function sendResponse(event, context, lambdaCallback , responseStatus, responseData: any = 'unknown') {
+function sendResponse(event, context, lambdaCallback , responseStatus, responseData?: any) {
 
   let responseReason = 'See the details in CloudWatch Log Stream: ' + context.logStreamName;
   if (responseStatus === 'FAILED') // if we get an error use the responseData
