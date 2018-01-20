@@ -1,0 +1,19 @@
+{
+  "extends": "tslint:latest",
+  "rules": {
+    "quotemark": [
+      true,
+      "single"
+    ],
+    "arrow-parens": false,
+    "interface-name": false,
+    "trailing-comma": false,
+    "no-consecutive-blank-lines": [false, 0],
+    "no-implicit-dependencies": false,
+    "no-submodule-imports": false,
+    "object-literal-sort-keys": false,
+    "prefer-conditional-expression": false,
+    "no-console": false,
+    "one-line": false
+  }
+}

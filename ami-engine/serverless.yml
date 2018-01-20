@@ -1,13 +1,28 @@
-service: ami-engine # NOTE: update this with your service name
+service:
+  name: SABS-lambda
+
+package:
+  exclude: 
+    - tests/**
+    - coverage/**
+  include:
+    - src/**
+
+# Add the serverless-webpack plugin
+plugins:
+  - serverless-webpack
+  - serverless-step-functions
+  - serverless-pseudo-parameters
+
+custom:
+    DynamoDBTableName: SABS-ami-store
 
 provider:
   name: aws
   runtime: nodejs6.10
+  stage: prod
 
-# you can overwrite defaults here
- stage: prod
-#  region: us-east-1
-# you can add statements to the Lambda function's IAM Role here
+
   iamRoleStatements:
    - Effect: "Allow"
      Action:
@@ -33,25 +48,6 @@ provider:
        - "codepipeline:PutJobSuccessResult"
        - "codepipeline:PutJobFailureResult"
      Resource: "*"
-
-   - Effect: "Allow"
-     Action:
-       - "sqs:ChangeMessageVisibility"
-       - "sqs:ChangeMessageVisibilityBatch"
-       - "sqs:DeleteMessage"
-       - "sqs:GetQueueUrl"
-       - "sqs:ListDeadLetterSourceQueues"
-       - "sqs:ReceiveMessage"
-       - "sqs:SendMessage"
-     Resource:
-       - "Fn::Join":
-         - ""
-         -
-           - "arn:aws:sqs:"
-           - "Ref" : "AWS::Region"
-           - ":"
-           - "Ref" : "AWS::AccountId"
-           - ":${self:custom.SQSQueueName}"
 
    - Effect: "Allow"
      Action:
@@ -85,42 +81,68 @@ provider:
            - ":"
            - "Ref" : "AWS::AccountId"
            - ":stack/*"
-
+   - Effect: "Allow"
+     Action:
+        - "states:StartExecution"
+     Resource:
+        - "*"
 
 functions:
-  create-image:
-    handler: ami-engine-createimage.handlerequest
-
+  create-ami:
+    handler: src/create-ami.run
     environment:
-      snapShotDescription: ami-engine snapshot
+      snapShotDescription: SABS engine snapshot
+      stateMachineArn: ${self:resources.Outputs.MyStateMachine.Value}
+
+  ami-build-complete:
+    handler: src/ami-build-complete.run
+    environment:
       dynamodbTableName: ${self:custom.DynamoDBTableName}
-      sqsQueueName: ${self:custom.SQSQueueName}
 
   custom-resource-handler:
-    handler: ami-engine-custom-resource-responder.handlerequest
+    handler: src/ami-engine-custom-resource-responder.run
     environment:
       dynamodbTableName: ${self:custom.DynamoDBTableName}
 
-  cleanup:
-    handler: ami-engine-cleanup-sqs.handlerequest
-    environment:
-      sqsQueueName: ${self:custom.SQSQueueName}
-    events:
-      - schedule: rate(2 hours)
-
-custom:
-    DynamoDBTableName: ami-store
-    SQSQueueName: ami-engine-cleanup-jobs
+stepFunctions:
+  stateMachines:
+    hellostepfunc1:
+      name: SABScheckamibuild
+      definition:
+        Comment: "Check if the ami build has completed or not"
+        StartAt: WaitState
+        States:
+          WaitState:
+            Type: Wait
+            Seconds: 30
+            Next: CheckAMIComplete
+          CheckAMIComplete:
+            Type: Task
+            Resource: "arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:service}-${opt:stage}-ami-build-complete"
+            Next: ChoiceState
+          ChoiceState:
+            Type: Choice
+            Choices:
+              - Variable: "$.AMIBuildComplete"
+                BooleanEquals: false
+                Next: WaitState
+              - Variable: "$.AMIBuildComplete"
+                BooleanEquals: true
+                Next: FinalState
+            Default: WaitState
+          FinalState:
+            Type: Pass
+            End: true
 
 # you can add CloudFormation resource templates here
 resources:
   Outputs:
     CreateImageExportValue: # create CFN export value 
-      Value: ${self:service}-${self:provider.stage}-create-image
+      Value: ${self:service}-${self:provider.stage}-create-ami
       Export:
-        Name: 'ami-engine-create'
+        Name: 'SABS-create-ami' # <- cloudformation export value used by code pipeline to know how to trigger an AMI creation
 
-    CustomResourceResponderServiceTokenExportValue:
+    CustomResourceResponderServiceTokenExportValue: # create CFN export value 
       Value:
         "Fn::Join":
           - ""
@@ -132,14 +154,16 @@ resources:
             - ":function:"
             - ${self:service}-${self:provider.stage}-custom-resource-handler
       Export:
-        Name: 'ami-engine-custom-resource-responder-service-token'
+        Name: 'SABS-custom-resource-get-what-ami-to-use' # <- cloudformation export value used by stacks to query what AMI they should use
+
+    MyStateMachine:
+      Description: The ARN of the state machine
+      Value:
+        Ref: SABScheckamibuild
+
+
 
   Resources:
-    SQSCleanupQueue: #SQS queue
-      Type: "AWS::SQS::Queue"
-      Properties:
-        QueueName: ${self:custom.SQSQueueName}
-
     DynamoDBTable:
       Type: "AWS::DynamoDB::Table"
       Properties:
